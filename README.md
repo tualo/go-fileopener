@@ -2,6 +2,8 @@
 
 Ein kleines Go-Programm, das Links wie `tualo-fs://OrdnerA` auf einen zuvor
 konfigurierten lokalen Ordner abbildet. Es unterstuetzt macOS, Windows und Linux.
+Das App-Icon kombiniert einen geoeffneten Ordner mit dem Tualo-Logo und wird bei
+der Installation automatisch fuer die jeweilige Plattform eingerichtet.
 
 Direkte Dateipfade aus Links werden absichtlich nicht akzeptiert. Nur lokale,
 vom Benutzer eingerichtete Aliase koennen geoeffnet werden.
@@ -16,9 +18,24 @@ go build -o fileopener .
 ./fileopener set OrdnerA "/lokaler/pfad/zu/OrdnerA"
 ```
 
+Ohne weitere Angabe wird `tualo-fs` registriert. Ein eigenes Schema kann beim
+Installieren optional angegeben werden:
+
+```sh
+./fileopener install meine-ordner
+```
+
+Der Browser-Link lautet dann `meine-ordner://OrdnerA`. Um das Schema spaeter zu
+aendern, wird `install` einfach erneut mit dem neuen Namen ausgefuehrt. Erlaubt
+sind RFC-konforme Schemas, die mit einem Buchstaben beginnen und danach
+Buchstaben, Ziffern sowie `+`, `-` oder `.` enthalten.
+
 Unter Windows werden die letzten beiden Befehle mit `fileopener.exe` ausgefuehrt.
 `install` registriert das Schema nur fuer den aktuellen Benutzer und benoetigt
-keine Administratorrechte.
+keine Administratorrechte. Nach einem Update muss `fileopener.exe install`
+erneut ausgefuehrt werden. Die App erscheint danach unter **Einstellungen >
+Apps > Standard-Apps** als `Tualo File Opener` und als Auswahl fuer den
+registrierten Linktyp.
 
 Danach kann folgender Link im Browser aufgerufen werden:
 
@@ -32,10 +49,10 @@ die externe Anwendung geoeffnet werden darf.
 ## Befehle
 
 ```text
-fileopener install
+fileopener install [Schema]
 fileopener set <Alias> <Ordner>
 fileopener list
-fileopener open <tualo-fs://Alias>
+fileopener open <Schema://Alias>
 fileopener remove <Alias>
 fileopener uninstall
 ```
@@ -60,3 +77,10 @@ GOOS=linux GOARCH=amd64 go build -o dist/linux/amd64/fileopener .
 
 Unter Linux muessen `xdg-open` und `xdg-mime` vorhanden sein. Die meisten
 Desktop-Distributionen liefern beide ueber `xdg-utils` aus.
+
+## App-Icon
+
+Die bearbeitbare Vorlage liegt unter `assets/app-icon.svg`. Daraus wurden
+`app-icon.png` fuer Linux, `app-icon.icns` fuer macOS und `app-icon.ico` fuer
+Windows erzeugt. Der Windows-amd64-Build bindet das Icon ueber
+`rsrc_windows_amd64.syso` automatisch auch in die EXE-Datei ein.

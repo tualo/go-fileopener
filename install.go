@@ -8,7 +8,7 @@ import (
 	"runtime"
 )
 
-func installProtocol() error {
+func installProtocol(scheme string) error {
 	executable, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("Programmpfad konnte nicht ermittelt werden: %w", err)
@@ -32,7 +32,11 @@ func installProtocol() error {
 			return err
 		}
 	}
-	return registerProtocol(installedExecutable)
+	installedIcon := filepath.Join(filepath.Dir(installedExecutable), appIconName)
+	if err := os.WriteFile(installedIcon, appIcon, 0o644); err != nil {
+		return fmt.Errorf("App-Icon konnte nicht installiert werden: %w", err)
+	}
+	return registerProtocol(installedExecutable, installedIcon, scheme)
 }
 
 func copyExecutable(source, destination string) error {

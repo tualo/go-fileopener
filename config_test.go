@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -45,5 +46,21 @@ func TestSetFolderReplacesAliasWithDifferentCase(t *testing.T) {
 	}
 	if len(cfg.Folders) != 1 || cfg.Folders["ordnera"] == "" {
 		t.Fatalf("setFolder() folders = %#v, want one lowercase alias", cfg.Folders)
+	}
+}
+
+func TestLoadConfigRejectsInvalidScheme(t *testing.T) {
+	configFile := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(configFile, []byte(`{"scheme":"invalid_schema"}`), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	if _, err := loadConfig(configFile); err == nil {
+		t.Fatal("loadConfig() error = nil, want invalid-scheme error")
+	}
+}
+
+func TestConfigUsesDefaultScheme(t *testing.T) {
+	if got := (config{}).urlScheme(); got != defaultURLScheme {
+		t.Errorf("urlScheme() = %q, want %q", got, defaultURLScheme)
 	}
 }

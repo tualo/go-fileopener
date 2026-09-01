@@ -13,6 +13,14 @@ import (
 
 type config struct {
 	Folders map[string]string `json:"folders"`
+	Scheme  string            `json:"scheme,omitempty"`
+}
+
+func (cfg config) urlScheme() string {
+	if cfg.Scheme == "" {
+		return defaultURLScheme
+	}
+	return cfg.Scheme
 }
 
 func configPath() (string, error) {
@@ -38,6 +46,12 @@ func loadConfig(path string) (config, error) {
 	}
 	if cfg.Folders == nil {
 		cfg.Folders = make(map[string]string)
+	}
+	if cfg.Scheme != "" {
+		cfg.Scheme, err = normalizeScheme(cfg.Scheme)
+		if err != nil {
+			return config{}, fmt.Errorf("Schema in der Konfiguration ist ungueltig: %w", err)
+		}
 	}
 	return cfg, nil
 }

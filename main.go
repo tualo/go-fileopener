@@ -27,22 +27,48 @@ func run(args []string) error {
 		printUsage()
 		return nil
 	case "install":
-		if len(args) != 1 {
-			return fmt.Errorf("Verwendung: fileopener install")
+		if len(args) > 2 {
+			return fmt.Errorf("Verwendung: fileopener install [Schema]")
 		}
-		if err := installProtocol(); err != nil {
+		cfg, err := loadConfig(path)
+		if err != nil {
 			return err
 		}
-		fmt.Printf("Schema %s:// wurde fuer diesen Benutzer registriert.\n", urlScheme)
+		scheme := cfg.urlScheme()
+		if len(args) == 2 {
+			scheme, err = normalizeScheme(args[1])
+			if err != nil {
+				return err
+			}
+		}
+		oldScheme := cfg.urlScheme()
+		if oldScheme != scheme {
+			if err := unregisterProtocol(oldScheme); err != nil {
+				return fmt.Errorf("alte Registrierung konnte nicht entfernt werden: %w", err)
+			}
+		}
+		if err := installProtocol(scheme); err != nil {
+			return err
+		}
+		cfg.Scheme = scheme
+		if err := saveConfig(path, cfg); err != nil {
+			return err
+		}
+		fmt.Printf("Schema %s:// wurde fuer diesen Benutzer registriert.\n", scheme)
 		return nil
 	case "uninstall":
 		if len(args) != 1 {
 			return fmt.Errorf("Verwendung: fileopener uninstall")
 		}
-		if err := unregisterProtocol(); err != nil {
+		cfg, err := loadConfig(path)
+		if err != nil {
 			return err
 		}
-		fmt.Printf("Registrierung fuer %s:// wurde entfernt.\n", urlScheme)
+		scheme := cfg.urlScheme()
+		if err := unregisterProtocol(scheme); err != nil {
+			return err
+		}
+		fmt.Printf("Registrierung fuer %s:// wurde entfernt.\n", scheme)
 		return nil
 	case "set":
 		if len(args) != 3 {
@@ -87,7 +113,7 @@ func run(args []string) error {
 		return nil
 	case "open":
 		if len(args) != 2 {
-			return fmt.Errorf("Verwendung: fileopener open <%s://Alias>", urlScheme)
+			return fmt.Errorf("Verwendung: fileopener open <Schema://Alias>")
 		}
 		return openConfiguredURL(path, args[1])
 	default:
@@ -99,11 +125,11 @@ func run(args []string) error {
 }
 
 func openConfiguredURL(configFile, rawURL string) error {
-	alias, err := aliasFromURL(rawURL)
+	cfg, err := loadConfig(configFile)
 	if err != nil {
 		return err
 	}
-	cfg, err := loadConfig(configFile)
+	alias, err := aliasFromURL(rawURL, cfg.urlScheme())
 	if err != nil {
 		return err
 	}
@@ -118,11 +144,11 @@ func printUsage() {
 	fmt.Printf(`Tualo File Opener
 
 Verwendung:
-  fileopener install
+	fileopener install [Schema]
   fileopener set <Alias> <Ordner>
   fileopener list
-  fileopener open <%s://Alias>
+	fileopener open <Schema://Alias>
   fileopener remove <Alias>
   fileopener uninstall
-`, urlScheme)
+`)
 }

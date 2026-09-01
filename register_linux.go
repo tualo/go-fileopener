@@ -12,7 +12,7 @@ import (
 
 const desktopFileName = "tualo-fileopener.desktop"
 
-func registerProtocol(executable string) error {
+func registerProtocol(executable, icon, scheme string) error {
 	dataDir := os.Getenv("XDG_DATA_HOME")
 	if dataDir == "" {
 		home, err := os.UserHomeDir()
@@ -25,11 +25,11 @@ func registerProtocol(executable string) error {
 	if err := os.MkdirAll(applicationsDir, 0o700); err != nil {
 		return fmt.Errorf("Anwendungsordner konnte nicht erstellt werden: %w", err)
 	}
-	entry := fmt.Sprintf("[Desktop Entry]\nType=Application\nName=Tualo File Opener\nExec=%s open %%u\nNoDisplay=true\nTerminal=false\nMimeType=x-scheme-handler/%s;\n", quoteDesktopArgument(executable), urlScheme)
+	entry := fmt.Sprintf("[Desktop Entry]\nType=Application\nName=Tualo File Opener\nExec=%s open %%u\nIcon=%s\nNoDisplay=true\nTerminal=false\nMimeType=x-scheme-handler/%s;\n", quoteDesktopArgument(executable), icon, scheme)
 	if err := os.WriteFile(filepath.Join(applicationsDir, desktopFileName), []byte(entry), 0o644); err != nil {
 		return fmt.Errorf("Desktop-Eintrag konnte nicht geschrieben werden: %w", err)
 	}
-	if err := exec.Command("xdg-mime", "default", desktopFileName, "x-scheme-handler/"+urlScheme).Run(); err != nil {
+	if err := exec.Command("xdg-mime", "default", desktopFileName, "x-scheme-handler/"+scheme).Run(); err != nil {
 		return fmt.Errorf("Schema konnte mit xdg-mime nicht registriert werden: %w", err)
 	}
 	if updateDatabase, err := exec.LookPath("update-desktop-database"); err == nil {
@@ -38,7 +38,7 @@ func registerProtocol(executable string) error {
 	return nil
 }
 
-func unregisterProtocol() error {
+func unregisterProtocol(_ string) error {
 	dataDir := os.Getenv("XDG_DATA_HOME")
 	if dataDir == "" {
 		home, err := os.UserHomeDir()

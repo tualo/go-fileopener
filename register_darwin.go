@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func registerProtocol(executable string) error {
+func registerProtocol(executable, icon, scheme string) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -24,6 +24,13 @@ func registerProtocol(executable string) error {
 	if output, err := exec.Command("/usr/bin/osacompile", "-o", appPath, "-e", script).CombinedOutput(); err != nil {
 		return fmt.Errorf("macOS-App konnte nicht erstellt werden: %w (%s)", err, strings.TrimSpace(string(output)))
 	}
+	iconData, err := os.ReadFile(icon)
+	if err != nil {
+		return fmt.Errorf("App-Icon konnte nicht gelesen werden: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(appPath, "Contents", "Resources", "applet.icns"), iconData, 0o644); err != nil {
+		return fmt.Errorf("App-Icon konnte nicht in das macOS-Bundle geschrieben werden: %w", err)
+	}
 
 	plist := filepath.Join(appPath, "Contents", "Info.plist")
 	plistBuddy := "/usr/libexec/PlistBuddy"
@@ -33,7 +40,7 @@ func registerProtocol(executable string) error {
 		"Add :CFBundleURLTypes:0 dict",
 		"Add :CFBundleURLTypes:0:CFBundleURLName string Tualo File Opener URL",
 		"Add :CFBundleURLTypes:0:CFBundleURLSchemes array",
-		"Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string " + urlScheme,
+		"Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string " + scheme,
 	}
 	for _, command := range commands {
 		if output, err := exec.Command(plistBuddy, "-c", command, plist).CombinedOutput(); err != nil {
@@ -50,7 +57,7 @@ func registerProtocol(executable string) error {
 	return nil
 }
 
-func unregisterProtocol() error {
+func unregisterProtocol(_ string) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
