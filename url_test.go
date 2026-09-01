@@ -6,12 +6,13 @@ func TestAliasFromURL(t *testing.T) {
 	tests := []struct {
 		name    string
 		rawURL  string
-		want    string
+		want    linkTarget
 		wantErr bool
 	}{
-		{name: "host", rawURL: "tualo-fs://OrdnerA", want: "OrdnerA"},
-		{name: "escaped alias", rawURL: "tualo-fs:Mein%20Ordner", want: "Mein Ordner"},
-		{name: "opaque", rawURL: "tualo-fs:OrdnerA", want: "OrdnerA"},
+		{name: "host", rawURL: "tualo-fs://OrdnerA", want: linkTarget{Alias: "OrdnerA"}},
+		{name: "subpath", rawURL: "tualo-fs://TFS/FREIEPRE/FREIEPRE_26_260-P_Flyer%20machwas/", want: linkTarget{Alias: "TFS", RelativePath: "FREIEPRE/FREIEPRE_26_260-P_Flyer machwas"}},
+		{name: "escaped alias", rawURL: "tualo-fs:Mein%20Ordner", want: linkTarget{Alias: "Mein Ordner"}},
+		{name: "opaque", rawURL: "tualo-fs:OrdnerA", want: linkTarget{Alias: "OrdnerA"}},
 		{name: "wrong scheme", rawURL: "https://OrdnerA", wantErr: true},
 		{name: "port", rawURL: "tualo-fs://OrdnerA:1234", wantErr: true},
 		{name: "path traversal", rawURL: "tualo-fs://OrdnerA/../geheim", wantErr: true},
@@ -21,7 +22,7 @@ func TestAliasFromURL(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := aliasFromURL(test.rawURL, defaultURLScheme)
+			got, err := targetFromURL(test.rawURL, defaultURLScheme)
 			if (err != nil) != test.wantErr {
 				t.Fatalf("aliasFromURL(%q) error = %v, wantErr %v", test.rawURL, err, test.wantErr)
 			}
@@ -33,12 +34,12 @@ func TestAliasFromURL(t *testing.T) {
 }
 
 func TestAliasFromURLWithCustomScheme(t *testing.T) {
-	got, err := aliasFromURL("local-folders://OrdnerA", "local-folders")
+	got, err := targetFromURL("local-folders://OrdnerA", "local-folders")
 	if err != nil {
 		t.Fatalf("aliasFromURL() error = %v", err)
 	}
-	if got != "OrdnerA" {
-		t.Errorf("aliasFromURL() = %q, want %q", got, "OrdnerA")
+	if got.Alias != "OrdnerA" {
+		t.Errorf("targetFromURL().Alias = %q, want %q", got.Alias, "OrdnerA")
 	}
 }
 

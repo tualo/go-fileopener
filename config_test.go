@@ -64,3 +64,36 @@ func TestConfigUsesDefaultScheme(t *testing.T) {
 		t.Errorf("urlScheme() = %q, want %q", got, defaultURLScheme)
 	}
 }
+
+func TestFolderForTargetResolvesSubdirectory(t *testing.T) {
+	root := t.TempDir()
+	want := filepath.Join(root, "FREIEPRE", "Projekt mit Leerzeichen")
+	if err := os.MkdirAll(want, 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	want, err := filepath.EvalSymlinks(want)
+	if err != nil {
+		t.Fatalf("EvalSymlinks() error = %v", err)
+	}
+	cfg := config{Folders: map[string]string{"TFS": root}}
+	got, err := folderForTarget(cfg, "TFS", "FREIEPRE/Projekt mit Leerzeichen")
+	if err != nil {
+		t.Fatalf("folderForTarget() error = %v", err)
+	}
+	if got != want {
+		t.Errorf("folderForTarget() = %q, want %q", got, want)
+	}
+}
+
+func TestFolderForTargetRejectsSymlinkOutsideRoot(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	link := filepath.Join(root, "outside")
+	if err := os.Symlink(outside, link); err != nil {
+		t.Skipf("Symlink konnte nicht erstellt werden: %v", err)
+	}
+	cfg := config{Folders: map[string]string{"TFS": root}}
+	if _, err := folderForTarget(cfg, "TFS", "outside"); err == nil {
+		t.Fatal("folderForTarget() error = nil, want symlink escape error")
+	}
+}

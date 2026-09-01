@@ -9,6 +9,11 @@ import (
 
 const defaultURLScheme = "tualo-fs"
 
+type linkTarget struct {
+	Alias        string
+	RelativePath string
+}
+
 func normalizeScheme(scheme string) (string, error) {
 	if scheme == "" {
 		return "", fmt.Errorf("Schema darf nicht leer sein")
@@ -27,35 +32,42 @@ func normalizeScheme(scheme string) (string, error) {
 	return strings.ToLower(scheme), nil
 }
 
-func aliasFromURL(rawURL, expectedScheme string) (string, error) {
+func targetFromURL(rawURL, expectedScheme string) (linkTarget, error) {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
-		return "", fmt.Errorf("Link ist ungueltig: %w", err)
+		return linkTarget{}, fmt.Errorf("Link ist ungueltig: %w", err)
 	}
 	if !strings.EqualFold(parsed.Scheme, expectedScheme) {
-		return "", fmt.Errorf("Schema muss %q sein", expectedScheme)
+		return linkTarget{}, fmt.Errorf("Schema muss %q sein", expectedScheme)
 	}
 	if parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
-		return "", fmt.Errorf("Link darf keine Zugangsdaten, Parameter oder Fragmente enthalten")
+		return linkTarget{}, fmt.Errorf("Link darf keine Zugangsdaten, Parameter oder Fragmente enthalten")
 	}
 	if parsed.Port() != "" {
-		return "", fmt.Errorf("Link darf keinen Port enthalten")
+		return linkTarget{}, fmt.Errorf("Link darf keinen Port enthalten")
 	}
 
 	alias := parsed.Host
 	if alias == "" && parsed.Opaque != "" {
 		alias = parsed.Opaque
 	}
-	if parsed.Path != "" && parsed.Path != "/" {
-		return "", fmt.Errorf("Link darf keinen zusaetzlichen Pfad enthalten")
-	}
 	if alias == "" || strings.ContainsAny(alias, `/\\`) {
-		return "", fmt.Errorf("Link enthaelt keinen gueltigen Ordner-Alias")
+		return linkTarget{}, fmt.Errorf("Link enthaelt keinen gueltigen Ordner-Alias")
 	}
 
 	decoded, err := url.PathUnescape(alias)
 	if err != nil || decoded == "" || strings.ContainsAny(decoded, `/\\`) {
-		return "", fmt.Errorf("Link enthaelt keinen gueltigen Ordner-Alias")
+		return linkTarget{}, fmt.Errorf("Link enthaelt keinen gueltigen Ordner-Alias")
 	}
-	return decoded, nil
+
+	relativePath := strings.Trim(parsed.Path, "/")
+	if relativePath != "" {
+		segments := strings.Split(relativePath, "/")
+		for _, segment := range segments {
+			if segment == "" || segment == "." || segment == ".." || strings.Contains(segment, `\`) {
+				return linkTarget{}, fmt.Errorf("Link enthaelt einen ungueltigen Unterpfad")
+			}
+		}
+	}
+	return linkTarget{Alias: decoded, RelativePath: relativePath}, nil
 }

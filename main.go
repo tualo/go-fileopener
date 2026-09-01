@@ -8,6 +8,7 @@ import (
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "Fehler:", err)
+		showError(err)
 		os.Exit(1)
 	}
 }
@@ -129,11 +130,11 @@ func openConfiguredURL(configFile, rawURL string) error {
 	if err != nil {
 		return err
 	}
-	alias, err := aliasFromURL(rawURL, cfg.urlScheme())
+	target, err := targetFromURL(rawURL, cfg.urlScheme())
 	if err != nil {
 		return err
 	}
-	folder, err := folderForAlias(cfg, alias)
+	folder, err := folderForTarget(cfg, target.Alias, target.RelativePath)
 	if err != nil {
 		return err
 	}

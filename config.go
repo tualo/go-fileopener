@@ -131,6 +131,38 @@ func folderForAlias(cfg config, alias string) (string, error) {
 	return "", fmt.Errorf("Alias %q ist nicht konfiguriert", alias)
 }
 
+func folderForTarget(cfg config, alias, relativePath string) (string, error) {
+	root, err := folderForAlias(cfg, alias)
+	if err != nil {
+		return "", err
+	}
+	if relativePath == "" {
+		return root, nil
+	}
+
+	root, err = filepath.EvalSymlinks(root)
+	if err != nil {
+		return "", fmt.Errorf("Stammordner fuer Alias %q konnte nicht aufgeloest werden: %w", alias, err)
+	}
+	target := filepath.Join(root, filepath.FromSlash(relativePath))
+	target, err = filepath.EvalSymlinks(target)
+	if err != nil {
+		return "", fmt.Errorf("Unterordner %q ist nicht erreichbar: %w", relativePath, err)
+	}
+	relativeTarget, err := filepath.Rel(root, target)
+	if err != nil || relativeTarget == ".." || strings.HasPrefix(relativeTarget, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("Unterordner liegt ausserhalb des konfigurierten Stammordners")
+	}
+	info, err := os.Stat(target)
+	if err != nil {
+		return "", fmt.Errorf("Unterordner %q ist nicht erreichbar: %w", relativePath, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("Unterpfad %q ist kein Ordner", relativePath)
+	}
+	return target, nil
+}
+
 func removeFolder(cfg *config, alias string) error {
 	for configuredAlias := range cfg.Folders {
 		if strings.EqualFold(configuredAlias, alias) {

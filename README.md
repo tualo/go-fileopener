@@ -41,7 +41,13 @@ Danach kann folgender Link im Browser aufgerufen werden:
 
 ```text
 tualo-fs://OrdnerA
+tualo-fs://OrdnerA/Unterordner/Projekt%20mit%20Leerzeichen
 ```
+
+Alles nach dem Alias wird als Unterpfad innerhalb des konfigurierten Ordners
+geoeffnet. Pfade ausserhalb dieses Stammordners und Symlink-Ausbrueche werden
+abgelehnt. Kann ein Link nicht geoeffnet werden, zeigt die Anwendung eine native
+Fehlermeldung an; die Meldung wird zusaetzlich auf stderr geschrieben.
 
 Der Browser fragt beim ersten Aufruf normalerweise nach einer Bestaetigung, dass
 die externe Anwendung geoeffnet werden darf.
