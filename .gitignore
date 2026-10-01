@@ -1,4 +1,5 @@
-/dist/
+/distX/
 /fileopener
 *.test
 ziel.md
+/tests

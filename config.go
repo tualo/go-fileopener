@@ -144,21 +144,32 @@ func folderForTarget(cfg config, alias, relativePath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Stammordner fuer Alias %q konnte nicht aufgeloest werden: %w", alias, err)
 	}
-	target := filepath.Join(root, filepath.FromSlash(relativePath))
-	target, err = filepath.EvalSymlinks(target)
-	if err != nil {
-		return "", fmt.Errorf("Unterordner %q ist nicht erreichbar: %w", relativePath, err)
-	}
-	relativeTarget, err := filepath.Rel(root, target)
-	if err != nil || relativeTarget == ".." || strings.HasPrefix(relativeTarget, ".."+string(filepath.Separator)) {
-		return "", fmt.Errorf("Unterordner liegt ausserhalb des konfigurierten Stammordners")
-	}
-	info, err := os.Stat(target)
-	if err != nil {
-		return "", fmt.Errorf("Unterordner %q ist nicht erreichbar: %w", relativePath, err)
-	}
-	if !info.IsDir() {
-		return "", fmt.Errorf("Unterpfad %q ist kein Ordner", relativePath)
+
+	target := root
+	for _, segment := range strings.Split(filepath.FromSlash(relativePath), string(filepath.Separator)) {
+		if segment == "" || segment == "." || segment == ".." {
+			return "", fmt.Errorf("Unterordner enthaelt einen ungueltigen Pfad")
+		}
+		next := filepath.Join(target, segment)
+		if err := os.Mkdir(next, 0o755); err != nil && !os.IsExist(err) {
+			return "", fmt.Errorf("Unterordner %q konnte nicht angelegt werden: %w", relativePath, err)
+		}
+		next, err = filepath.EvalSymlinks(next)
+		if err != nil {
+			return "", fmt.Errorf("Unterordner %q ist nicht erreichbar: %w", relativePath, err)
+		}
+		relativeTarget, err := filepath.Rel(root, next)
+		if err != nil || relativeTarget == ".." || strings.HasPrefix(relativeTarget, ".."+string(filepath.Separator)) {
+			return "", fmt.Errorf("Unterordner liegt ausserhalb des konfigurierten Stammordners")
+		}
+		info, err := os.Stat(next)
+		if err != nil {
+			return "", fmt.Errorf("Unterordner %q ist nicht erreichbar: %w", relativePath, err)
+		}
+		if !info.IsDir() {
+			return "", fmt.Errorf("Unterpfad %q ist kein Ordner", relativePath)
+		}
+		target = next
 	}
 	return target, nil
 }

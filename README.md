@@ -37,6 +37,11 @@ erneut ausgefuehrt werden. Die App erscheint danach unter **Einstellungen >
 Apps > Standard-Apps** als `Tualo File Opener` und als Auswahl fuer den
 registrierten Linktyp.
 
+Eine eigenstaendige PowerShell-Variante liegt unter
+`powershell/fileopener.ps1`. Sie verwendet dieselbe Konfiguration und kann mit
+`powershell -ExecutionPolicy Bypass -File powershell/fileopener.ps1 install`
+installiert werden.
+
 Danach kann folgender Link im Browser aufgerufen werden:
 
 ```text
@@ -51,6 +56,23 @@ Fehlermeldung an; die Meldung wird zusaetzlich auf stderr geschrieben.
 
 Der Browser fragt beim ersten Aufruf normalerweise nach einer Bestaetigung, dass
 die externe Anwendung geoeffnet werden darf.
+
+## Browser-Smoke-Test mit Puppeteer
+
+Node.js wird benoetigt. Der interaktive Test oeffnet eine Browserseite, klickt
+den `tualo-fs`-Link und fragt anschliessend, ob Finder den Ordner geoeffnet hat.
+
+```sh
+cd tests/puppeteer
+npm install
+npm test
+```
+
+Ein anderer Link kann als Argument uebergeben werden:
+
+```sh
+npm test -- 'tualo-fs://ORDNER-N/PROAD-Dokumente/'
+```
 
 ## Befehle
 
@@ -90,3 +112,4 @@ Die bearbeitbare Vorlage liegt unter `assets/app-icon.svg`. Daraus wurden
 `app-icon.png` fuer Linux, `app-icon.icns` fuer macOS und `app-icon.ico` fuer
 Windows erzeugt. Der Windows-amd64-Build bindet das Icon ueber
 `rsrc_windows_amd64.syso` automatisch auch in die EXE-Datei ein.
+

@@ -85,6 +85,31 @@ func TestFolderForTargetResolvesSubdirectory(t *testing.T) {
 	}
 }
 
+func TestFolderForTargetCreatesMissingSubdirectory(t *testing.T) {
+	root := t.TempDir()
+	root, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatalf("EvalSymlinks() error = %v", err)
+	}
+	want := filepath.Join(root, "FREIEPRE", "Neues Projekt")
+	cfg := config{Folders: map[string]string{"TFS": root}}
+
+	got, err := folderForTarget(cfg, "TFS", "FREIEPRE/Neues Projekt")
+	if err != nil {
+		t.Fatalf("folderForTarget() error = %v", err)
+	}
+	if got != want {
+		t.Errorf("folderForTarget() = %q, want %q", got, want)
+	}
+	info, err := os.Stat(got)
+	if err != nil {
+		t.Fatalf("created folder is not accessible: %v", err)
+	}
+	if !info.IsDir() {
+		t.Errorf("created path %q is not a directory", got)
+	}
+}
+
 func TestFolderForTargetRejectsSymlinkOutsideRoot(t *testing.T) {
 	root := t.TempDir()
 	outside := t.TempDir()
